@@ -44,11 +44,11 @@ if wifi_result != ResultCode.OK:
 
 mqtt = esp_at_manager.mqtt
 
-mqtt_result = mqtt.user_config(
+config_result = mqtt.user_config(
     mqtt.MQTT_OVER_TCP, MQTT_CLIENT_ID, MQTT_USER_NAME, MQTT_PASSWORD, MQTT_PATH
 )
-if mqtt_result != ResultCode.OK:
-    print("mqtt config failed: " + ResultCode.to_string(mqtt_result))
+if config_result != ResultCode.OK:
+    print("mqtt config failed: " + ResultCode.to_string(config_result))
     while True:
         display.show(Image.NO)
         sleep(1000)
