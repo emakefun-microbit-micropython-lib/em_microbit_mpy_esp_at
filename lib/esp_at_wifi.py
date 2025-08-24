@@ -1,6 +1,6 @@
-from stream_util import *
-from result_code import ResultCode
-from result_data import ResultData
+from esp_at_stream_util import *
+from esp_at_result_code import ResultCode
+from esp_at_result_data import ResultData
 
 __version__ = "1.0.0"
 
@@ -14,7 +14,7 @@ class EspAtWifi:
             return ResultCode.ERROR
 
         self._stream.write(command + "\r\n")
-        targets = [success_target, "\r\nERROR\r\n", "busy p...\r\n"]
+        targets = (success_target, "\r\nERROR\r\n", "busy p...\r\n",)
         index = find_util(self._stream, targets, timeout)
 
         if index == 0:
@@ -43,17 +43,17 @@ class EspAtWifi:
         if send_result != 0:
             return ResultData(send_result)
 
-        ip = read_until(self._stream, '"')
+        ip = read_until(self._stream, '"', 1000)
 
         gateway = None
-        if find_util(self._stream, ['+CIPSTA:gateway:"'], 100) == 0:
-            gateway = read_until(self._stream, '"')
+        if find_util(self._stream, ('+CIPSTA:gateway:"',), 100) == 0:
+            gateway = read_until(self._stream, '"', 1000)
 
         netmask = None
-        if find_util(self._stream, ['+CIPSTA:netmask:"'], 100) == 0:
-            netmask = read_until(self._stream, '"')
+        if find_util(self._stream, ('+CIPSTA:netmask:"',), 100) == 0:
+            netmask = read_until(self._stream, '"', 1000)
 
-        if find_util(self._stream, ["\r\nOK\r\n"], 100) == 0:
+        if find_util(self._stream, ("\r\nOK\r\n",), 100) == 0:
             return ResultData(ResultCode.OK, ip=ip, gateway=gateway, netmask=netmask)
 
         return ResultData(ResultCode.ERROR)
@@ -63,8 +63,8 @@ class EspAtWifi:
         if send_result != 0:
             return ResultData(send_result)
 
-        mac = read_until(self._stream, '"')
-        if find_util(self._stream, ["\r\nOK\r\n"], 100) == 0:
+        mac = read_until(self._stream, '"', 1000)
+        if find_util(self._stream, ("\r\nOK\r\n",), 100) == 0:
             return ResultData(ResultCode.OK, mac=mac)
 
         return ResultData(ResultCode.ERROR)
@@ -74,18 +74,18 @@ class EspAtWifi:
         if send_result != 0:
             return ResultData(send_result)
 
-        ssid = read_until(self._stream, '"')
-        if not skip_next(self._stream, ",") or not skip_next(self._stream, '"'):
+        ssid = read_until(self._stream, '"', 1000)
+        if not skip_next(self._stream, ",", 1000) or not skip_next(self._stream, '"', 1000):
             return ResultData(ResultCode.ERROR)
 
-        bssid = read_until(self._stream, '"')
-        if not skip_next(self._stream, ","):
+        bssid = read_until(self._stream, '"', 1000)
+        if not skip_next(self._stream, ",", 1000):
             return ResultData(ResultCode.ERROR)
 
-        channel = parse_int(self._stream)
-        rssi = parse_int(self._stream)
+        channel = parse_int(self._stream, 1000)
+        rssi = parse_int(self._stream, 1000)
 
-        if find_util(self._stream, ["\r\nOK\r\n"], 100) == 0:
+        if find_util(self._stream, ("\r\nOK\r\n",), 100) == 0:
             return ResultData(
                 ResultCode.OK, ssid=ssid, bssid=bssid, channel=channel, rssi=rssi
             )

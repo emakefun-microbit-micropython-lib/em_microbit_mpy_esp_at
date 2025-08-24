@@ -1,7 +1,7 @@
 import time
 
 
-def find_util(stream, targets: list, timeout_ms: int):
+def find_util(stream, targets: tuple, timeout_ms: int):
     if not targets or timeout_ms <= 0:
         return -1
 
@@ -53,9 +53,15 @@ def find_util(stream, targets: list, timeout_ms: int):
     return -1
 
 
-def skip_next(stream, target_char: str):
-    if stream.any() <= 0 or not target_char:
+def skip_next(stream, target_char: str, timeout_ms: int):
+    if not target_char:
         return False
+    
+    end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
+    while stream.any() == 0:
+        if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
+            return False  
+        time.sleep_ms(1)  
 
     current_char = stream.read(1).decode("utf-8")
     return current_char == target_char
@@ -75,23 +81,36 @@ def empty_rx(stream, duration_ms: int):
     return True
 
 
-def read_until(stream, delimiter: str):
+def read_until(stream, delimiter: str, timeout_ms: int):
     result = ""
+    end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
+
     while True:
+        if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
+            break
+
         if stream.any() <= 0:
             time.sleep_ms(10)
-            continue
+            continue  
 
         current_char = stream.read(1).decode("utf-8")
+        if not current_char:
+            continue
+
         if current_char == delimiter:
             break
         result += current_char
+        
     return result
 
 
-def parse_int(stream):
+def parse_int(stream, timeout_ms: int):
     num_str = ""
+    end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
+
     while True:
+        if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
+            break
         if stream.any() <= 0:
             time.sleep_ms(10)
             continue

@@ -1,4 +1,4 @@
-from result_code import ResultCode
+from esp_at_result_code import ResultCode
 
 
 class ResultData:

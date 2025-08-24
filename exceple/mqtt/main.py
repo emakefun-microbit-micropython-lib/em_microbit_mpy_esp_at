@@ -3,7 +3,7 @@ import time
 import urandom
 from micropython import const
 from esp_at_manager import EspAtManager
-from result_code import ResultCode
+from esp_at_result_code import ResultCode
 
 WIFI_SSID: str = "emakefun"
 WIFI_PASSWORD: str = "501416wf"
@@ -26,13 +26,6 @@ last_publish_time = 0
 
 while uart.any():
     uart.read()
-
-init_result = esp_at_manager.esp_at_manager_init()
-if init_result != ResultCode.OK:
-    print("module init failed: " + ResultCode.to_string(init_result))
-    while True:
-        display.show(Image.NO)
-        sleep(1000)
 
 wifi_result = esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD)
 if wifi_result != ResultCode.OK:
@@ -71,7 +64,7 @@ if subscribe_result != ResultCode.OK:
 while True:
     received_result = mqtt.receive()
     if received_result.is_ok and received_result.length > 0:
-        display.scroll("received content")
+        display.scroll("1")
         remaining_length = received_result.length
         while remaining_length > 0:
             if mqtt.get_stream().any():
@@ -80,7 +73,7 @@ while True:
 
     current_time = time.ticks_ms()
     if current_time - last_publish_time > 3000:
-        display.scroll("publish content")
+        display.scroll("2")
         content = "test message with timestamp:" + str(current_time)
         publish_result = mqtt.publish(test_topic, content, 0, False)
         if publish_result == ResultCode.OK:
