@@ -1,6 +1,5 @@
 class ResultData:
-    def __init__(self, success: bool, **fields):
-        self.success = success
+    def __init__(self, **fields):
         self._fields = fields
 
     def __getattr__(self, name):

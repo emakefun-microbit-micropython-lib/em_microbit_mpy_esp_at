@@ -1,12 +1,13 @@
 from microbit import *
 import time
 from micropython import const
-from esp_at_device import EspAtDevice
+from esp_at_manager import EspAtManager
+from esp_at_mqtt import *
+import machine
 
 WIFI_SSID: str = "emakefun"
 WIFI_PASSWORD: str = "501416wf"
 
-MQTT_SCHEME: int = const(1)
 MQTT_CLIENT_ID: str = "my_client_id"
 MQTT_USER_NAME: str = "my_user_name"
 MQTT_PASSWORD: str = "my_password"
@@ -14,47 +15,55 @@ MQTT_PATH: str = ""
 
 MQTT_BROKER: str = "broker.emqx.io"
 MQTT_PORT: int = const(1883)
-MQTT_TOPIC: str = "emakefun/sensor/testtopic"
 
-
-def show_error():
-    while True:
-        display.show(Image.NO)
-        sleep(1000)
-
+device_id = "".join("{:02x}".format(b) for b in machine.unique_id())
+MQTT_TOPIC = "emakefun/sensor/{}/testtopic".format(device_id)
 
 uart.init(baudrate=9600, bits=8, parity=None, stop=1, tx=pin1, rx=pin0)
-esp_at_device = EspAtDevice(uart)
+esp_at_manager = EspAtManager(uart)
 
 last_publish_time = 0
+last_sent_message = ""
 
-if not esp_at_device.wifi_connect(WIFI_SSID, WIFI_PASSWORD):
-    show_error()
+if not esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD, 10000):
+    raise Exception("WiFi connection failed")
 
-if not esp_at_device.mqtt_user_config(
-    MQTT_SCHEME, MQTT_CLIENT_ID, MQTT_USER_NAME, MQTT_PASSWORD, MQTT_PATH
+mqtt = esp_at_manager.mqtt
+
+if not mqtt.user_config(
+    MQTT_OVER_TCP, MQTT_CLIENT_ID, MQTT_USER_NAME, MQTT_PASSWORD, MQTT_PATH
 ):
-    show_error()
+    raise Exception("MQTT configuration failed")
 
-if not esp_at_device.mqtt_connect(MQTT_BROKER, MQTT_PORT, True):
-    show_error()
+if not mqtt.connect_mqtt(MQTT_BROKER, MQTT_PORT, True, 10000):
+    raise Exception("MQTT connection failed")
 
-if not esp_at_device.mqtt_subscribe(MQTT_TOPIC, 0):
-    show_error()
+if not mqtt.subscribe(MQTT_TOPIC, 0):
+    raise Exception("MQTT subscription failed")
 
 while True:
-    received_result = esp_at_device.mqtt_receive()
-    if received_result.success and received_result.length > 0:
+    topic, length = mqtt.receive(5000)
+    if length > 0:
         display.show(Image.SKULL)
-        while esp_at_device.stream.any():
-            read_char = esp_at_device.stream.read()
+        remaining_length = length
+        data = bytearray()
+        while remaining_length > 0:
+            if mqtt.stream.any():
+                data.extend(mqtt.stream.read(1))
+                remaining_length -= 1
+
+        if data.decode("utf-8") == last_sent_message:
+            display.show(Image.HAPPY)
+        else:
+            display.show(Image.SAD)
 
     current_time = time.ticks_ms()
     if current_time - last_publish_time > 3000:
         display.show(Image.TARGET)
-        content = "test message with timestamp:" + str(current_time)
-        if esp_at_device.mqtt_publish(MQTT_TOPIC, content, 0, False):
+        send_content = "test message with timestamp:" + str(current_time)
+        if mqtt.publish(MQTT_TOPIC, send_content, 0, False, 10000):
             display.show(Image.YES)
+            last_sent_message = send_content
         else:
-            show_error()
+            display.show(Image.NO)
         last_publish_time = time.ticks_ms()
