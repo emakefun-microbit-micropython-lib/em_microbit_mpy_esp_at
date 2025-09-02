@@ -8,7 +8,7 @@ class EspAtWifi:
         self._stream = stream
 
     def connect_wifi(self, ssid: str, password: str):
-        if None in (ssid, password) or password is None:
+        if None in (ssid, password) or ssid == "":
             raise ValueError("Error: 'connect_wifi' function, invalid parameters.")
         command = 'AT+CWJAP="{}","{}"'.format(ssid, password)
         targets = (
