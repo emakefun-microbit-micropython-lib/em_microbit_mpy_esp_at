@@ -13,7 +13,7 @@ class EspAtManager:
         self._mqtt = EspAtMqtt(stream)
 
         if not self.restart(2000):
-            raise Exception("module restart failed.")
+            raise Exception("Error: module restart failed.")
 
         at_commands = (
             "ATE0",
@@ -31,7 +31,7 @@ class EspAtManager:
         for command in at_commands:
             self._stream.write(command + "\r\n")
             if multi_find_util(self._stream, targets, 500) != 0:
-                raise Exception("esp at init failed.")
+                raise Exception("Error: module init failed.")
 
     @property
     def wifi(self):
