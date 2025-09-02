@@ -25,24 +25,24 @@ esp_at_manager = esp_at_manager.EspAtManager(uart)
 last_publish_time = 0
 
 if not esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD):
-    raise Exception("WiFi connection failed")
+    raise Exception("Error: WiFi connection failed.")
 
 mqtt = esp_at_manager.mqtt
 if not mqtt.user_config(
     esp_at_mqtt.OVER_TCP, MQTT_CLIENT_ID, MQTT_USER_NAME, MQTT_PASSWORD, MQTT_PATH
 ):
-    raise Exception("MQTT configuration failed")
+    raise Exception("Error: MQTT configuration failed.")
 
 if not mqtt.connect_mqtt(MQTT_BROKER, MQTT_PORT, True):
-    raise Exception("MQTT connection failed")
+    raise Exception("Error: MQTT connection failed.")
 
 if not mqtt.subscribe(MQTT_TOPIC, 0):
-    raise Exception("MQTT subscription failed")
+    raise Exception("Error: MQTT subscription failed.")
 
 display.show(Image.HAPPY)
 while True:
     topic, length = mqtt.receive(100)
-    if topic and topic == MQTT_TOPIC:
+    if topic != "":
         end_time = time.ticks_add(time.ticks_ms(), 200)
         received_data = bytearray()
         while True:
@@ -50,19 +50,18 @@ while True:
             if remaining <= 0:
                 break
             data = mqtt.stream.read(remaining)
-            if data:
+            if data is not None:
                 received_data.extend(data)
-                if len(received_data) == length:
-                    if received_data.decode("utf-8") == "display on":
-                        display.on()
-                    else:
-                        display.off()
-                    break
             if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
                 break
+        if topic == MQTT_TOPIC and len(received_data) == length:
+            if received_data.decode("utf-8") == "display on":
+                display.on()
+            else:
+                display.off()
 
     if time.ticks_ms() - last_publish_time > 1000:
         send_content = "display off" if display.is_on() else "display on"
         if not mqtt.publish(MQTT_TOPIC, send_content, 0, False, 1000):
-            raise Exception("MQTT publish content failed.")
+            raise Exception("Error: MQTT publish content failed.")
         last_publish_time = time.ticks_ms()

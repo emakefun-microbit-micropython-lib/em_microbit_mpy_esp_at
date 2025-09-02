@@ -8,8 +8,8 @@ class EspAtWifi:
         self._stream = stream
 
     def connect_wifi(self, ssid: str, password: str):
-        if not ssid or password is None:
-            raise ValueError("connect wifi,invalid parameters.")
+        if None in (ssid, password) or password is None:
+            raise ValueError("Error: 'connect_wifi' function, invalid parameters.")
         command = 'AT+CWJAP="{}","{}"'.format(ssid, password)
         targets = (
             "\r\nOK\r\n",
@@ -53,7 +53,7 @@ class EspAtWifi:
         if not multi_find_util(self._stream, targets, 500) != 0:
             return None
         mac = read_until(self._stream, '"', 500)
-        if mac and single_find_util(self._stream, "\r\nOK\r\n", 100):
+        if mac is not None and single_find_util(self._stream, "\r\nOK\r\n", 100):
             return mac
         return None
 
@@ -68,13 +68,13 @@ class EspAtWifi:
             return None
         ssid = read_until(self._stream, '"', 500)
         if (
-            not ssid
+            ssid is None
             or not skip_next(self._stream, ",", 100)
             or not skip_next(self._stream, '"', 100)
         ):
             return None
         bssid = read_until(self._stream, '"', 500)
-        if not bssid or not skip_next(self._stream, ",", 100):
+        if bssid is None or not skip_next(self._stream, ",", 100):
             return None
 
         channel = parse_int(self._stream, 500)

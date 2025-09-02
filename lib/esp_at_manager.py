@@ -43,7 +43,7 @@ class EspAtManager:
 
     def restart(self, timeout_ms: int):
         if timeout_ms < 0:
-            raise ValueError("esp at restart,invalid timeout_ms parameter.")
+            raise ValueError("Error: 'restart' function, invalid parameter.")
         targets = (
             "\r\nOK\r\n",
             "\r\nERROR\r\n",
@@ -67,7 +67,6 @@ class EspAtManager:
         self._stream.write("+++")
         if single_find_util(self._stream, "\r\nSEND Canceled\r\n", 100):
             self._stream.write("\r\n")
-            while self._stream.any():
-                self._stream.read()
+            self._stream.read()
             return False
         return True

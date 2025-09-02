@@ -26,8 +26,13 @@ class EspAtMqtt:
         return self._stream
 
     def _send_command(self, command: str, success_target: str, timeout_ms: int):
-        if not command or not success_target or timeout_ms < 0:
-            return False
+        if (
+            None in (command, success_target)
+            or command == ""
+            or success_target == ""
+            or timeout_ms < 0
+        ):
+            raise ValueError("Error: '_send_command' function, invalid parameters.")
         self._stream.write(command + "\r\n")
         targets = (
             success_target,
@@ -44,22 +49,22 @@ class EspAtMqtt:
         password: str,
         path: str,
     ):
-        if not 1 <= scheme <= 10 or None in {client_id, username, password, path}:
-            raise ValueError("mqtt user config,invalid scheme parameter.")
+        if not 1 <= scheme <= 10 or None in (client_id, username, password, path):
+            raise ValueError("Error: 'user_config' function, invalid parameters.")
         command = 'AT+MQTTUSERCFG=0,{},"{}","{}","{}",0,0,"{}"'.format(
             scheme, client_id, username, password, path
         )
         return self._send_command(command, "\r\nOK\r\n", 500)
 
     def connect_mqtt(self, host: str, port: int, reconnect: bool):
-        if not host or not 1 <= port <= 65535:
-            raise ValueError("connect mqtt,invalid parameters.")
+        if host is None or host == "" or not 1 <= port <= 65535:
+            raise ValueError("Error: 'user_config' function, invalid parameters.")
         command = 'AT+MQTTCONN=0,"{}",{},{}'.format(host, port, 1 if reconnect else 0)
         return self._send_command(command, "\r\nOK\r\n", 10000)
 
     def publish(self, topic: str, data: str, qos: int, retain: bool, timeout_ms: int):
-        if not topic or data is None or not 0 <= qos <= 2 or timeout_ms < 0:
-            raise ValueError("mqtt publish message,invalid parameters.")
+        if None in (topic, data) or topic == "" or not 0 <= qos <= 2 or timeout_ms < 0:
+            raise ValueError("Error: 'publish' function, invalid parameters.")
 
         data_bytes = data.encode("utf-8")
         command = 'AT+MQTTPUBRAW=0,"{}",{},{},{}'.format(
@@ -71,14 +76,14 @@ class EspAtMqtt:
         return single_find_util(self._stream, "+MQTTPUB:OK", timeout_ms)
 
     def subscribe(self, topic: str, qos: int):
-        if not topic or not 0 <= qos <= 2:
-            raise ValueError("mqtt subscribe topic,invalid parameters.")
+        if topic is None or topic == "" or not 0 <= qos <= 2:
+            raise ValueError("Error: 'subscribe' function, invalid parameters.")
         command = 'AT+MQTTSUB=0,"{}",{}'.format(topic, qos)
         return self._send_command(command, "\r\nOK\r\n", 500)
 
     def unsubscribe(self, topic: str):
-        if not topic:
-            raise ValueError("mqtt unsubscribe topic,invalid topic parameter.")
+        if topic is None or topic == "":
+            raise ValueError("Error: 'unsubscribe' function, invalid parameter.")
         return self._send_command(
             'AT+MQTTUNSUB=0,"{}"'.format(topic), "\r\nOK\r\n", 500
         )
@@ -88,17 +93,17 @@ class EspAtMqtt:
 
     def receive(self, timeout_ms: int):
         if timeout_ms < 0:
-            raise ValueError("mqtt receive message,invalid timeout_ms parameter.")
+            raise ValueError("Error: 'receive' function, invalid parameter.")
 
         header = '+MQTTSUBRECV:0,"'
         if not single_find_util(self._stream, header, timeout_ms):
-            return (None, 0)
+            return ("", 0)
 
         topic = read_until(self._stream, '"', 500)
-        if not topic or not skip_next(self._stream, ",", 500):
-            return (None, 0)
+        if topic is None or not skip_next(self._stream, ",", 500):
+            return ("", 0)
 
         length = parse_int(self._stream, 500)
         if length is None or length <= 0:
-            return (None, 0)
+            return ("", 0)
         return (topic, length)
