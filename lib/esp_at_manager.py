@@ -30,8 +30,8 @@ class EspAtManager:
         )
         for command in at_commands:
             self._stream.write(command + "\r\n")
-            if find_util(self._stream, targets, 500) != 0:
-                raise Exception("AT command failed.")
+            if multi_find_util(self._stream, targets, 500) != 0:
+                raise Exception("esp at init failed.")
 
     @property
     def wifi(self):
@@ -49,24 +49,23 @@ class EspAtManager:
             "\r\nERROR\r\n",
             "busy p...\r\n",
         )
-        start_time = time.ticks_ms()
+        end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
         while True:
             self._stream.write("AT+RST\r\n")
-            if (
-                find_util(self._stream, targets, 100) == 0
-                and find_util(self._stream, "\r\nready\r\n", 1000) == 0
+            if multi_find_util(self._stream, targets, 100) == 0 and single_find_util(
+                self._stream, "\r\nready\r\n", 1000
             ):
                 self._stream.write("AT\r\n")
-                return find_util(self._stream, targets, 100) == 0
+                return multi_find_util(self._stream, targets, 100) == 0
             else:
                 self.cancel_send()
-            if time.ticks_diff(time.ticks_ms(), start_time) >= timeout_ms:
+            if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
                 return False
 
     def cancel_send(self):
         time.sleep_ms(30)
         self._stream.write("+++")
-        if find_util(self._stream, "\r\nSEND Canceled\r\n", 100) == 0:
+        if single_find_util(self._stream, "\r\nSEND Canceled\r\n", 100):
             self._stream.write("\r\n")
             while self._stream.any():
                 self._stream.read()

@@ -34,7 +34,7 @@ class EspAtMqtt:
             "\r\nERROR\r\n",
             "busy p...\r\n",
         )
-        return find_util(self._stream, targets, timeout_ms) == 0
+        return multi_find_util(self._stream, targets, timeout_ms) == 0
 
     def user_config(
         self,
@@ -46,18 +46,16 @@ class EspAtMqtt:
     ):
         if not 1 <= scheme <= 10 or None in {client_id, username, password, path}:
             raise ValueError("mqtt user config,invalid scheme parameter.")
-
         command = 'AT+MQTTUSERCFG=0,{},"{}","{}","{}",0,0,"{}"'.format(
             scheme, client_id, username, password, path
         )
         return self._send_command(command, "\r\nOK\r\n", 500)
 
-    def connect_mqtt(self, host: str, port: int, reconnect: bool, timeout_ms: int):
-        if not host or not 1 <= port <= 65535 or timeout_ms < 0:
+    def connect_mqtt(self, host: str, port: int, reconnect: bool):
+        if not host or not 1 <= port <= 65535:
             raise ValueError("connect mqtt,invalid parameters.")
-
         command = 'AT+MQTTCONN=0,"{}",{},{}'.format(host, port, 1 if reconnect else 0)
-        return self._send_command(command, "\r\nOK\r\n", timeout_ms)
+        return self._send_command(command, "\r\nOK\r\n", 10000)
 
     def publish(self, topic: str, data: str, qos: int, retain: bool, timeout_ms: int):
         if not topic or data is None or not 0 <= qos <= 2 or timeout_ms < 0:
@@ -70,12 +68,11 @@ class EspAtMqtt:
         if not self._send_command(command, "\r\nOK\r\n\r\n>", 500):
             return False
         self._stream.write(data_bytes)
-        return find_util(self._stream, "+MQTTPUB:OK", timeout_ms) == 0
+        return single_find_util(self._stream, "+MQTTPUB:OK", timeout_ms)
 
     def subscribe(self, topic: str, qos: int):
         if not topic or not 0 <= qos <= 2:
             raise ValueError("mqtt subscribe topic,invalid parameters.")
-
         command = 'AT+MQTTSUB=0,"{}",{}'.format(topic, qos)
         return self._send_command(command, "\r\nOK\r\n", 500)
 
@@ -94,14 +91,14 @@ class EspAtMqtt:
             raise ValueError("mqtt receive message,invalid timeout_ms parameter.")
 
         header = '+MQTTSUBRECV:0,"'
-        if find_util(self._stream, header, timeout_ms) != 0:
+        if not single_find_util(self._stream, header, timeout_ms):
             return (None, 0)
 
         topic = read_until(self._stream, '"', 500)
-        if not skip_next(self._stream, ",", 500):
+        if not topic or not skip_next(self._stream, ",", 500):
             return (None, 0)
 
         length = parse_int(self._stream, 500)
-        if length <= 0:
+        if length is None or length <= 0:
             return (None, 0)
         return (topic, length)

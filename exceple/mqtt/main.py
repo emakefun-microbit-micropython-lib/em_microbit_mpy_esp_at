@@ -23,9 +23,8 @@ uart.init(baudrate=9600, bits=8, parity=None, stop=1, tx=pin1, rx=pin0)
 esp_at_manager = esp_at_manager.EspAtManager(uart)
 
 last_publish_time = 0
-led_state = False
 
-if not esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD, 5000):
+if not esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD):
     raise Exception("WiFi connection failed")
 
 mqtt = esp_at_manager.mqtt
@@ -34,7 +33,7 @@ if not mqtt.user_config(
 ):
     raise Exception("MQTT configuration failed")
 
-if not mqtt.connect_mqtt(MQTT_BROKER, MQTT_PORT, True, 5000):
+if not mqtt.connect_mqtt(MQTT_BROKER, MQTT_PORT, True):
     raise Exception("MQTT connection failed")
 
 if not mqtt.subscribe(MQTT_TOPIC, 0):
@@ -42,23 +41,28 @@ if not mqtt.subscribe(MQTT_TOPIC, 0):
 
 display.show(Image.HAPPY)
 while True:
-    topic, length = mqtt.receive(1000)
-    if length > 0:
-        data = bytearray()
-        while length > 0:
-            if mqtt.stream.any():
-                data.extend(mqtt.stream.read(1))
-                length -= 1
-        if data.decode("utf-8") == "led on":
-            display.on()
-        else:
-            display.off()
+    topic, length = mqtt.receive(100)
+    if topic and topic == MQTT_TOPIC:
+        end_time = time.ticks_add(time.ticks_ms(), 200)
+        received_data = bytearray()
+        while True:
+            remaining = length - len(received_data)
+            if remaining <= 0:
+                break
+            data = mqtt.stream.read(remaining)
+            if data:
+                received_data.extend(data)
+                if len(received_data) == length:
+                    if received_data.decode("utf-8") == "display on":
+                        display.on()
+                    else:
+                        display.off()
+                    break
+            if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
+                break
 
-    current_time = time.ticks_ms()
-    if current_time - last_publish_time > 3000:
-        led_state = not led_state
-        send_content = "led on" if led_state else "led off"
+    if time.ticks_ms() - last_publish_time > 1000:
+        send_content = "display off" if display.is_on() else "display on"
         if not mqtt.publish(MQTT_TOPIC, send_content, 0, False, 1000):
             raise Exception("MQTT publish content failed.")
-
         last_publish_time = time.ticks_ms()
