@@ -73,7 +73,11 @@ class EspAtMqtt:
         if not self._send_command(command, "\r\nOK\r\n\r\n>", 500):
             return False
         self._stream.write(data_bytes)
-        return single_find_util(self._stream, "+MQTTPUB:OK", timeout_ms)
+        targets = (
+            "+MQTTPUB:OK",
+            "+MQTTPUB:FAIL",
+        )
+        return multi_find_util(self._stream, targets, timeout_ms) == 0
 
     def subscribe(self, topic: str, qos: int):
         if topic is None or topic == "" or not 0 <= qos <= 2:

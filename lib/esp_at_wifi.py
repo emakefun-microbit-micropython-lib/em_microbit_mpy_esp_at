@@ -39,7 +39,7 @@ class EspAtWifi:
             netmask = read_until(self._stream, '"', 500)
         if None in (ip, gateway, netmask):
             return None
-        if single_find_util(self._stream, "\r\nOK\r\n", 100) == 0:
+        if single_find_util(self._stream, "\r\nOK\r\n", 100):
             return (ip, gateway, netmask)
         return None
 

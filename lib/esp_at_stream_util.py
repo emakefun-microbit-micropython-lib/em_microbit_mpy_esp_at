@@ -2,7 +2,7 @@ import time
 
 
 def multi_find_util(stream, targets: tuple, timeout_ms: int):
-    if not targets or timeout_ms < 0:
+    if targets is None or len(targets) == 0 or timeout_ms < 0:
         raise ValueError("Error: 'multi_find_util' function, invalid parameters.")
     byte_targets = [t.encode("utf-8") for t in targets]
     offsets = [0] * len(byte_targets)

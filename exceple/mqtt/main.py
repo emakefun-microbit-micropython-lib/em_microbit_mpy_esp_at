@@ -25,19 +25,19 @@ esp_at_manager = esp_at_manager.EspAtManager(uart)
 last_publish_time = 0
 
 if not esp_at_manager.wifi.connect_wifi(WIFI_SSID, WIFI_PASSWORD):
-    raise Exception("Error: WiFi connection failed.")
+    raise Exception("Error: wifi connection failed.")
 
 mqtt = esp_at_manager.mqtt
 if not mqtt.user_config(
     esp_at_mqtt.OVER_TCP, MQTT_CLIENT_ID, MQTT_USER_NAME, MQTT_PASSWORD, MQTT_PATH
 ):
-    raise Exception("Error: MQTT configuration failed.")
+    raise Exception("Error: mqtt configuration user properties failed.")
 
 if not mqtt.connect_mqtt(MQTT_BROKER, MQTT_PORT, True):
-    raise Exception("Error: MQTT connection failed.")
+    raise Exception("Error: mqtt connection failed.")
 
 if not mqtt.subscribe(MQTT_TOPIC, 0):
-    raise Exception("Error: MQTT subscription failed.")
+    raise Exception("Error: mqtt subscription failed.")
 
 display.show(Image.HAPPY)
 while True:
@@ -63,5 +63,5 @@ while True:
     if time.ticks_ms() - last_publish_time > 1000:
         send_content = "display off" if display.is_on() else "display on"
         if not mqtt.publish(MQTT_TOPIC, send_content, 0, False, 1000):
-            raise Exception("Error: MQTT publish content failed.")
+            raise Exception("Error: mqtt publish content failed.")
         last_publish_time = time.ticks_ms()
