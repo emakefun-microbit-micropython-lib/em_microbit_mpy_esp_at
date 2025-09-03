@@ -52,9 +52,10 @@ while True:
             if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
                 break
         if topic == MQTT_TOPIC and len(received_data) == length:
-            if received_data.decode("utf-8") == "display on":
+            message = received_data.decode("utf-8")
+            if message == "display on":
                 display.on()
-            else:
+            elif message == "display off":
                 display.off()
 
     if time.ticks_ms() - last_publish_time > 1000:

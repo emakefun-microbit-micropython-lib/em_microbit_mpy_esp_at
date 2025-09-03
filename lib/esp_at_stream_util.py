@@ -136,14 +136,12 @@ def parse_int(stream, timeout_ms: int):
     while True:
         if stream.any():
             current_read_byte = stream.read(1)[0]
-            if current_read_byte in (ord(","), ord("\r"), ord("\n")):
-                break
             if ord("0") <= current_read_byte <= ord("9") or (
                 current_read_byte == ord("-") and not num_bytes
             ):
                 num_bytes.append(current_read_byte)
             else:
-                return None
+                break
         if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
             return None
     if len(num_bytes) > 0 and not (len(num_bytes) == 1 and num_bytes[0] == ord("-")):
