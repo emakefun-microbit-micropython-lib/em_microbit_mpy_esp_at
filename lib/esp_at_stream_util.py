@@ -2,7 +2,13 @@ import time
 
 
 def multi_find_util(stream, targets: tuple, timeout_ms: int):
-    if targets is None or len(targets) == 0 or timeout_ms < 0:
+    if not (
+        isinstance(targets, tuple)
+        and len(targets) > 0
+        and all(isinstance(t, str) and t for t in targets)
+        and isinstance(timeout_ms, int)
+        and timeout_ms >= 0
+    ):
         raise ValueError("Error: 'multi_find_util' function, invalid parameters.")
     byte_targets = [t.encode("utf-8") for t in targets]
     offsets = [0] * len(byte_targets)
@@ -44,7 +50,12 @@ def multi_find_util(stream, targets: tuple, timeout_ms: int):
 
 
 def single_find_util(stream, target: str, timeout_ms: int):
-    if target is None or target == "" or timeout_ms < 0:
+    if not (
+        isinstance(target, str)
+        and target
+        and isinstance(timeout_ms, int)
+        and timeout_ms >= 0
+    ):
         raise ValueError("Error: 'single_find_util' function, invalid parameters.")
 
     byte_target = target.encode("utf-8")
@@ -80,7 +91,12 @@ def single_find_util(stream, target: str, timeout_ms: int):
 
 
 def skip_next(stream, target: str, timeout_ms: int):
-    if target is None or target == "" or timeout_ms < 0:
+    if not (
+        isinstance(target, str)
+        and target
+        and isinstance(timeout_ms, int)
+        and timeout_ms >= 0
+    ):
         raise ValueError("Error: 'skip_next' function, invalid parameters.")
     end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
     while True:
@@ -91,7 +107,12 @@ def skip_next(stream, target: str, timeout_ms: int):
 
 
 def read_until(stream, delimiter: str, timeout_ms: int):
-    if delimiter is None or delimiter == "" or timeout_ms < 0:
+    if not (
+        isinstance(delimiter, str)
+        and delimiter
+        and isinstance(timeout_ms, int)
+        and timeout_ms >= 0
+    ):
         raise ValueError("Error: 'read_until' function, invalid parameters.")
     received_data = bytearray()
     end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
@@ -108,7 +129,7 @@ def read_until(stream, delimiter: str, timeout_ms: int):
 
 
 def parse_int(stream, timeout_ms: int):
-    if timeout_ms < 0:
+    if not (isinstance(timeout_ms, int) and timeout_ms >= 0):
         raise ValueError("Error: 'parse_int' function, invalid parameter.")
     num_bytes = bytearray()
     end_time = time.ticks_add(time.ticks_ms(), timeout_ms)
@@ -122,7 +143,7 @@ def parse_int(stream, timeout_ms: int):
             ):
                 num_bytes.append(current_read_byte)
             else:
-                break
+                return None
         if time.ticks_diff(time.ticks_ms(), end_time) >= 0:
             return None
     if len(num_bytes) > 0 and not (len(num_bytes) == 1 and num_bytes[0] == ord("-")):

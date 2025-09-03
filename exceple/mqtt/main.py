@@ -45,11 +45,8 @@ while True:
     if topic != "":
         end_time = time.ticks_add(time.ticks_ms(), 200)
         received_data = bytearray()
-        while True:
-            remaining = length - len(received_data)
-            if remaining <= 0:
-                break
-            data = mqtt.stream.read(remaining)
+        while len(received_data) != length:
+            data = mqtt.stream.read(length - len(received_data))
             if data is not None:
                 received_data.extend(data)
             if time.ticks_diff(time.ticks_ms(), end_time) >= 0:

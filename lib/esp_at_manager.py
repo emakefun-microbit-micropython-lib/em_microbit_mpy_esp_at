@@ -42,7 +42,7 @@ class EspAtManager:
         return self._mqtt
 
     def restart(self, timeout_ms: int):
-        if timeout_ms < 0:
+        if not (isinstance(timeout_ms, int) and timeout_ms >= 0):
             raise ValueError("Error: 'restart' function, invalid parameter.")
         targets = (
             "\r\nOK\r\n",
@@ -65,7 +65,7 @@ class EspAtManager:
     def cancel_send(self):
         time.sleep_ms(30)
         self._stream.write("+++")
-        if single_find_util(self._stream, "\r\nSEND Canceled\r\n", 100):
+        if not single_find_util(self._stream, "\r\nSEND Canceled\r\n", 100):
             self._stream.write("\r\n")
             self._stream.read()
             return False
