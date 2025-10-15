@@ -1,6 +1,6 @@
 from esp_at_stream_util import *
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class EspAtWifi:
