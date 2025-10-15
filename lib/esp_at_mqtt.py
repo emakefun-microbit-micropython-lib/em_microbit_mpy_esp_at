@@ -2,7 +2,7 @@ from esp_at_stream_util import *
 from micropython import const
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # <scheme>：
 OVER_TCP: int = const(1)

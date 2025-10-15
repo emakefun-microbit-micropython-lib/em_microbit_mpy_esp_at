@@ -19,7 +19,7 @@ MQTT_PORT: int = const(1883)
 device_id = "".join("{:02x}".format(b) for b in machine.unique_id())
 MQTT_TOPIC = "emakefun/sensor/{}/testtopic".format(device_id)
 
-uart.init(baudrate=9600, bits=8, parity=None, stop=1, tx=pin1, rx=pin0)
+uart.init(baudrate=115200, bits=8, parity=None, stop=1, tx=pin1, rx=pin0)
 esp_at_manager = esp_at_manager.EspAtManager(uart)
 
 last_publish_time = 0
